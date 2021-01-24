@@ -15,24 +15,42 @@
  **/
 
 var idMap = {
-    // input
-    "inject": "#palette_node_inject",
-    "httpin": "#palette_node_http_in",
-    "mqttIn": "#palette_node_mqtt_in",
-    // output
-    "debug": "#palette_node_debug",
-    "httpResponse": "#palette_node_http_response",
-    "mqttOut": "#palette_node_mqtt_out",
+    // common
+    "inject": ".red-ui-palette-node[data-palette-type='inject']",
+    "debug": ".red-ui-palette-node[data-palette-type='debug']",
+    "complete": ".red-ui-palette-node[data-palette-type='complete']",
+    "catch": ".red-ui-palette-node[data-palette-type='catch']",
+    "status": ".red-ui-palette-node[data-palette-type='status']",
+    "comment": ".red-ui-palette-node[data-palette-type='comment']",
     // function
-    "function": "#palette_node_function",
-    "template": "#palette_node_template",
-    "change": "#palette_node_change",
-    "range": "#palette_node_range",
-    "httpRequest": "#palette_node_http_request",
-    "html": "#palette_node_html",
-    "json": "#palette_node_json",
+    "function": ".red-ui-palette-node[data-palette-type='function']",
+    "switch": ".red-ui-palette-node[data-palette-type='switch']",
+    "change": ".red-ui-palette-node[data-palette-type='change']",
+    "range": ".red-ui-palette-node[data-palette-type='range']",
+    "template": ".red-ui-palette-node[data-palette-type='template']",
+    "delay": ".red-ui-palette-node[data-palette-type='delay']",
+    "trigger": ".red-ui-palette-node[data-palette-type='trigger']",
+    "exec": ".red-ui-palette-node[data-palette-type='exec']",
+    // network
+    "mqttIn": ".red-ui-palette-node[data-palette-type='mqtt in']",
+    "mqttOut": ".red-ui-palette-node[data-palette-type='mqtt out']",
+    "httpIn": ".red-ui-palette-node[data-palette-type='http in']",
+    "httpResponse": ".red-ui-palette-node[data-palette-type='http response']",
+    "httpRequest": ".red-ui-palette-node[data-palette-type='http request']",
+    "websocketIn": ".red-ui-palette-node[data-palette-type='websocket in']",
+    "websocketOut": ".red-ui-palette-node[data-palette-type='websocket out']",
+    // sequence
+    "split": ".red-ui-palette-node[data-palette-type='split']",
+    "join": ".red-ui-palette-node[data-palette-type='join']",
+    "batch": ".red-ui-palette-node[data-palette-type='batch']",
+    // parser
+    "csv": ".red-ui-palette-node[data-palette-type='csv']",
+    "html": ".red-ui-palette-node[data-palette-type='html']",
+    "json": ".red-ui-palette-node[data-palette-type='json']",
+    "xml": ".red-ui-palette-node[data-palette-type='xml']",
+    "yaml": ".red-ui-palette-node[data-palette-type='yaml']",
     // storage
-    "filein": "#palette_node_file_in",
+    "fileIn": ".red-ui-palette-node[data-palette-type='file in']",
 };
 
 function getId(type) {

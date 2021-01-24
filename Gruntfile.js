@@ -16,18 +16,29 @@
 
 var path = require("path");
 var fs = require("fs-extra");
+var sass = require("node-sass");
 
 module.exports = function(grunt) {
 
-    var nodemonArgs = ["-v"];
+    var nodemonArgs = ["-V"];
     var flowFile = grunt.option('flowFile');
     if (flowFile) {
         nodemonArgs.push(flowFile);
+        process.env.NODE_RED_ENABLE_PROJECTS=false;
+    }
+    var userDir = grunt.option('userDir');
+    if (userDir) {
+        nodemonArgs.push("-u");
+        nodemonArgs.push(userDir);
     }
 
+    var browserstack = grunt.option('browserstack');
+    if (browserstack) {
+        process.env.BROWSERSTACK = true;
+    }
     var nonHeadless = grunt.option('non-headless');
     if (nonHeadless) {
-        process.env.NODE_RED_NON_HEADLESS = 'true';
+        process.env.NODE_RED_NON_HEADLESS = true;
     }
     grunt.initConfig({
         pkg: grunt.file.readJSON('package.json'),
@@ -42,8 +53,8 @@ module.exports = function(grunt) {
                 ui: 'bdd',
                 reporter: 'spec'
             },
-            all: { src: ['test/**/*_spec.js'] },
-            core: { src: ["test/_spec.js","test/unit/**/*_spec.js"]},
+            all: { src: ["test/unit/_spec.js","test/unit/**/*_spec.js","test/nodes/**/*_spec.js"] },
+            core: { src: ["test/unit/_spec.js","test/unit/**/*_spec.js"]},
             nodes: { src: ["test/nodes/**/*_spec.js"]}
         },
         webdriver: {
@@ -51,19 +62,19 @@ module.exports = function(grunt) {
                 configFile: 'test/editor/wdio.conf.js'
             }
         },
-        mocha_istanbul: {
+        nyc: {
             options: {
-                globals: ['expect'],
-                timeout: 3000,
-                ignoreLeaks: false,
-                ui: 'bdd',
-                reportFormats: ['lcov','html'],
-                print: 'both',
-                istanbulOptions: ['--no-default-excludes', '-i','**/packages/node_modules/**']
+                cwd: '.',
+                include: ['packages/node_modules/**'],
+                excludeNodeModules: false,
+                exclude: ['packages/node_modules/@node-red/editor-client/**'],
+                reporter: ['lcov', 'html','text-summary'],
+                reportDir: 'coverage',
+                all: true
             },
-            all: { src: ["test/unit/_spec.js","test/unit/**/*_spec.js","test/nodes/**/*_spec.js"] },
-            core: { src: ["test/unit/_spec.js","test/unit/**/*_spec.js"]},
-            nodes: { src: ["test/nodes/**/*_spec.js"]}
+            all:   { cmd: false, args: ['grunt', 'simplemocha:all'] },
+            core:  { options: { exclude:['packages/node_modules/@node-red/editor-client/**', 'packages/node_modules/@node-red/nodes/**']},cmd: false, args: ['grunt', 'simplemocha:core'] },
+            nodes: { cmd: false, args: ['grunt', 'simplemocha:nodes'] }
         },
         jshint: {
             options: {
@@ -79,20 +90,20 @@ module.exports = function(grunt) {
                 //"loopfunc": true, // allow functions to be defined in loops
                 //"sub": true       // don't warn that foo['bar'] should be written as foo.bar
             },
-            all: [
-                'Gruntfile.js',
-                'red.js',
-                'packages/**/*.js'
-            ],
-            core: {
-                files: {
-                    src: [
-                        'Gruntfile.js',
-                        'red.js',
-                        'packages/**/*.js',
-                    ]
-                }
-            },
+            // all: [
+            //     'Gruntfile.js',
+            //     'red.js',
+            //     'packages/**/*.js'
+            // ],
+            // core: {
+            //     files: {
+            //         src: [
+            //             'Gruntfile.js',
+            //             'red.js',
+            //             'packages/**/*.js',
+            //         ]
+            //     }
+            // },
             nodes: {
                 files: {
                     src: [ 'nodes/core/*/*.js' ]
@@ -100,7 +111,7 @@ module.exports = function(grunt) {
             },
             editor: {
                 files: {
-                    src: [ 'editor/js/**/*.js' ]
+                    src: [ 'packages/node_modules/@node-red/editor-client/src/js/**/*.js' ]
                 }
             },
             tests: {
@@ -120,6 +131,7 @@ module.exports = function(grunt) {
                 src: [
                     // Ensure editor source files are concatenated in
                     // the right order
+                    "packages/node_modules/@node-red/editor-client/src/js/polyfills.js",
                     "packages/node_modules/@node-red/editor-client/src/js/jquery-addons.js",
                     "packages/node_modules/@node-red/editor-client/src/js/red.js",
                     "packages/node_modules/@node-red/editor-client/src/js/events.js",
@@ -145,17 +157,22 @@ module.exports = function(grunt) {
                     "packages/node_modules/@node-red/editor-client/src/js/ui/common/tabs.js",
                     "packages/node_modules/@node-red/editor-client/src/js/ui/common/stack.js",
                     "packages/node_modules/@node-red/editor-client/src/js/ui/common/typedInput.js",
+                    "packages/node_modules/@node-red/editor-client/src/js/ui/common/toggleButton.js",
+                    "packages/node_modules/@node-red/editor-client/src/js/ui/common/colorPicker.js",
                     "packages/node_modules/@node-red/editor-client/src/js/ui/actions.js",
                     "packages/node_modules/@node-red/editor-client/src/js/ui/deploy.js",
                     "packages/node_modules/@node-red/editor-client/src/js/ui/diff.js",
                     "packages/node_modules/@node-red/editor-client/src/js/ui/keyboard.js",
                     "packages/node_modules/@node-red/editor-client/src/js/ui/workspaces.js",
+                    "packages/node_modules/@node-red/editor-client/src/js/ui/statusBar.js",
                     "packages/node_modules/@node-red/editor-client/src/js/ui/view.js",
                     "packages/node_modules/@node-red/editor-client/src/js/ui/view-navigator.js",
                     "packages/node_modules/@node-red/editor-client/src/js/ui/view-tools.js",
                     "packages/node_modules/@node-red/editor-client/src/js/ui/sidebar.js",
                     "packages/node_modules/@node-red/editor-client/src/js/ui/palette.js",
                     "packages/node_modules/@node-red/editor-client/src/js/ui/tab-info.js",
+                    "packages/node_modules/@node-red/editor-client/src/js/ui/tab-info-outliner.js",
+                    "packages/node_modules/@node-red/editor-client/src/js/ui/tab-help.js",
                     "packages/node_modules/@node-red/editor-client/src/js/ui/tab-config.js",
                     "packages/node_modules/@node-red/editor-client/src/js/ui/tab-context.js",
                     "packages/node_modules/@node-red/editor-client/src/js/ui/palette-editor.js",
@@ -167,8 +184,10 @@ module.exports = function(grunt) {
                     "packages/node_modules/@node-red/editor-client/src/js/ui/library.js",
                     "packages/node_modules/@node-red/editor-client/src/js/ui/notifications.js",
                     "packages/node_modules/@node-red/editor-client/src/js/ui/search.js",
+                    "packages/node_modules/@node-red/editor-client/src/js/ui/actionList.js",
                     "packages/node_modules/@node-red/editor-client/src/js/ui/typeSearch.js",
                     "packages/node_modules/@node-red/editor-client/src/js/ui/subflow.js",
+                    "packages/node_modules/@node-red/editor-client/src/js/ui/group.js",
                     "packages/node_modules/@node-red/editor-client/src/js/ui/userSettings.js",
                     "packages/node_modules/@node-red/editor-client/src/js/ui/projects/projects.js",
                     "packages/node_modules/@node-red/editor-client/src/js/ui/projects/projectSettings.js",
@@ -181,22 +200,23 @@ module.exports = function(grunt) {
             vendor: {
                 files: {
                     "packages/node_modules/@node-red/editor-client/public/vendor/vendor.js": [
-                        "packages/node_modules/@node-red/editor-client/src/vendor/jquery/js/jquery-1.11.3.min.js",
-                        "packages/node_modules/@node-red/editor-client/src/vendor/bootstrap/js/bootstrap.min.js",
-                        "packages/node_modules/@node-red/editor-client/src/vendor/jquery/js/jquery-ui-1.10.3.custom.min.js",
+                        "packages/node_modules/@node-red/editor-client/src/vendor/jquery/js/jquery-3.5.1.min.js",
+                        "packages/node_modules/@node-red/editor-client/src/vendor/jquery/js/jquery-migrate-3.3.0.min.js",
+                        "packages/node_modules/@node-red/editor-client/src/vendor/jquery/js/jquery-ui.min.js",
                         "packages/node_modules/@node-red/editor-client/src/vendor/jquery/js/jquery.ui.touch-punch.min.js",
-                        "packages/node_modules/@node-red/editor-client/src/vendor/marked/marked.min.js",
+                        "node_modules/marked/marked.min.js",
+                        "node_modules/dompurify/dist/purify.min.js",
                         "packages/node_modules/@node-red/editor-client/src/vendor/d3/d3.v3.min.js",
-                        "packages/node_modules/@node-red/editor-client/src/vendor/i18next/i18next.min.js"
-                    ],
-                    "packages/node_modules/@node-red/editor-client/public/vendor/vendor.css": [
-                        // TODO: resolve relative resource paths in
-                        //       bootstrap/FA/jquery
-                    ],
-                    "packages/node_modules/@node-red/editor-client/public/vendor/jsonata/jsonata.min.js": [
+                        "packages/node_modules/@node-red/editor-client/src/vendor/i18next/i18next.min.js",
                         "node_modules/jsonata/jsonata-es5.min.js",
-                        "packages/node_modules/@node-red/editor-client/src/vendor/jsonata/formatter.js"
+                        "packages/node_modules/@node-red/editor-client/src/vendor/jsonata/formatter.js",
+                        "packages/node_modules/@node-red/editor-client/src/vendor/ace/ace.js",
+                        "packages/node_modules/@node-red/editor-client/src/vendor/ace/ext-language_tools.js",
                     ],
+                    // "packages/node_modules/@node-red/editor-client/public/vendor/vendor.css": [
+                    //     // TODO: resolve relative resource paths in
+                    //     //       bootstrap/FA/jquery
+                    // ],
                     "packages/node_modules/@node-red/editor-client/public/vendor/ace/worker-jsonata.js": [
                         "node_modules/jsonata/jsonata-es5.min.js",
                         "packages/node_modules/@node-red/editor-client/src/vendor/jsonata/worker-jsonata.js"
@@ -217,15 +237,12 @@ module.exports = function(grunt) {
         sass: {
             build: {
                 options: {
+                    implementation: sass,
                     outputStyle: 'compressed'
                 },
                 files: [{
                     dest: 'packages/node_modules/@node-red/editor-client/public/red/style.min.css',
                     src: 'packages/node_modules/@node-red/editor-client/src/sass/style.scss'
-                },
-                {
-                    dest: 'packages/node_modules/@node-red/editor-client/public/vendor/bootstrap/css/bootstrap.min.css',
-                    src: 'packages/node_modules/@node-red/editor-client/src/vendor/bootstrap/css/bootstrap.css'
                 }]
             }
         },
@@ -277,7 +294,7 @@ module.exports = function(grunt) {
                 files: [
                     'packages/node_modules/@node-red/editor-client/src/js/**/*.js'
                 ],
-                tasks: ['copy:build','concat','uglify','attachCopyright:js']
+                tasks: ['copy:build','concat',/*'uglify',*/ 'attachCopyright:js']
             },
             sass: {
                 files: [
@@ -352,9 +369,7 @@ module.exports = function(grunt) {
                         cwd: 'packages/node_modules/@node-red/editor-client/src/vendor',
                         src: [
                             'ace/**',
-                            //'bootstrap/css/**',
-                            'bootstrap/img/**',
-                            'jquery/css/**',
+                            'jquery/css/base/**',
                             'font-awesome/**'
                         ],
                         expand: true,
@@ -443,6 +458,7 @@ module.exports = function(grunt) {
                     'packages/node_modules/@node-red/runtime/lib/index.js',
                     'packages/node_modules/@node-red/runtime/lib/api/*.js',
                     'packages/node_modules/@node-red/runtime/lib/events.js',
+                    'packages/node_modules/@node-red/runtime/lib/hooks.js',
                     'packages/node_modules/@node-red/util/**/*.js',
                     'packages/node_modules/@node-red/editor-api/lib/index.js',
                     'packages/node_modules/@node-red/editor-api/lib/auth/index.js'
@@ -493,17 +509,37 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-contrib-watch');
     grunt.loadNpmTasks('grunt-concurrent');
     grunt.loadNpmTasks('grunt-sass');
-    grunt.loadNpmTasks('grunt-nodemon');
     grunt.loadNpmTasks('grunt-contrib-compress');
     grunt.loadNpmTasks('grunt-contrib-copy');
     grunt.loadNpmTasks('grunt-chmod');
     grunt.loadNpmTasks('grunt-jsonlint');
-    grunt.loadNpmTasks('grunt-mocha-istanbul');
-    grunt.loadNpmTasks('grunt-webdriver');
+    if (fs.existsSync(path.join("node_modules", "grunt-webdriver"))) {
+        grunt.loadNpmTasks('grunt-webdriver');
+    }
     grunt.loadNpmTasks('grunt-jsdoc');
     grunt.loadNpmTasks('grunt-jsdoc-to-markdown');
     grunt.loadNpmTasks('grunt-npm-command');
     grunt.loadNpmTasks('grunt-mkdir');
+    grunt.loadNpmTasks('grunt-simple-nyc');
+
+    grunt.registerMultiTask('nodemon', 'Runs a nodemon monitor of your node.js server.', function () {
+        const nodemon = require('nodemon');
+        this.async();
+        const options = this.options();
+        options.script = this.data.script;
+        let callback;
+        if (options.callback) {
+            callback = options.callback;
+            delete options.callback;
+        } else {
+            callback = function(nodemonApp) {
+                nodemonApp.on('log', function (event) {
+                    console.log(event.colour);
+                });
+            };
+        }
+        callback(nodemon(options));
+    });
 
     grunt.registerMultiTask('attachCopyright', function() {
         var files = this.data.src;
@@ -558,12 +594,25 @@ module.exports = function(grunt) {
     });
 
     grunt.registerTask('verifyUiTestDependencies', function() {
-        if (!fs.existsSync(path.join("node_modules", "chromedriver"))) {
-            grunt.fail.fatal('You need to run "npm install chromedriver@2" before running UI test.');
+        if (!fs.existsSync(path.join("node_modules", "grunt-webdriver"))) {
+            grunt.fail.fatal('You need to install the UI test dependencies first.\nUse the script in "scripts/install-ui-test-dependencies.sh"');
             return false;
         }
     });
+    grunt.registerTask('generatePublishScript',
+        'Generates a script to publish build output to npm',
+            function () {
+                const done = this.async();
+                const generatePublishScript = require("./scripts/generate-publish-script.js");
+                generatePublishScript().then(function(output) {
+                    grunt.log.writeln(output);
 
+                    const filePath = path.join(grunt.config.get('paths.dist'),"modules","publish.sh");
+                    grunt.file.write(filePath,output);
+
+                    done();
+                });
+            });
     grunt.registerTask('setDevEnv',
         'Sets NODE_ENV=development so non-minified assets are used',
             function () {
@@ -572,27 +621,42 @@ module.exports = function(grunt) {
 
     grunt.registerTask('default',
         'Builds editor content then runs code style checks and unit tests on all components',
-        ['build','verifyPackageDependencies','jshint:editor','mocha_istanbul:all']);
+        ['build','verifyPackageDependencies','jshint:editor','nyc:all']);
+
+    grunt.registerTask('no-coverage',
+        'Builds editor content then runs code style checks and unit tests on all components without code coverage',
+        ['build','verifyPackageDependencies','jshint:editor','simplemocha:all']);
+
 
     grunt.registerTask('test-core',
         'Runs code style check and unit tests on core runtime code',
-        ['build','mocha_istanbul:core']);
+        ['build','nyc:core']);
 
     grunt.registerTask('test-editor',
         'Runs code style check on editor code',
         ['jshint:editor']);
 
-    grunt.registerTask('test-ui',
-        'Builds editor content then runs unit tests on editor ui',
-        ['verifyUiTestDependencies','build','jshint:editor','webdriver:all']);
+    if (!fs.existsSync(path.join("node_modules", "grunt-webdriver"))) {
+        grunt.registerTask('test-ui',
+            'Builds editor content then runs unit tests on editor ui',
+            ['verifyUiTestDependencies']);
+    } else {
+        grunt.registerTask('test-ui',
+            'Builds editor content then runs unit tests on editor ui',
+            ['verifyUiTestDependencies','build','jshint:editor','webdriver:all']);
+    }
 
     grunt.registerTask('test-nodes',
         'Runs unit tests on core nodes',
-        ['build','mocha_istanbul:nodes']);
+        ['build','nyc:nodes']);
 
     grunt.registerTask('build',
         'Builds editor content',
         ['clean:build','jsonlint','concat:build','concat:vendor','copy:build','uglify:build','sass:build','attachCopyright']);
+
+    grunt.registerTask('build-dev',
+        'Developer mode: build dev version',
+        ['clean:build','concat:build','concat:vendor','copy:build','sass:build','setDevEnv']);
 
     grunt.registerTask('dev',
         'Developer mode: run node-red, watch for source changes and build/restart',
@@ -600,7 +664,7 @@ module.exports = function(grunt) {
 
     grunt.registerTask('release',
         'Create distribution zip file',
-        ['build','verifyPackageDependencies','clean:release','mkdir:release','chmod:release','compress:release','pack-modules']);
+        ['build','verifyPackageDependencies','clean:release','mkdir:release','chmod:release','compress:release','pack-modules','generatePublishScript']);
 
     grunt.registerTask('pack-modules',
         'Create module pack files for release',
@@ -609,7 +673,7 @@ module.exports = function(grunt) {
 
     grunt.registerTask('coverage',
         'Run Istanbul code test coverage task',
-        ['build','mocha_istanbul:all']);
+        ['build','nyc:all']);
 
     grunt.registerTask('docs',
         'Generates API documentation',

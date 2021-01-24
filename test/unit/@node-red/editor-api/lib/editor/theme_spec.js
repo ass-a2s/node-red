@@ -45,7 +45,7 @@ describe("api/editor/theme", function () {
         context.page.should.have.a.property("tabicon", "red/images/node-red-icon-black.svg");
         context.should.have.a.property("header");
         context.header.should.have.a.property("title", "Node-RED");
-        context.header.should.have.a.property("image", "red/images/node-red.png");
+        context.header.should.have.a.property("image", "red/images/node-red.svg");
         context.should.have.a.property("asset");
         context.asset.should.have.a.property("red", "red/red.min.js");
         context.asset.should.have.a.property("main", "red/main.min.js");
@@ -141,6 +141,21 @@ describe("api/editor/theme", function () {
         settings.palette.should.have.a.property("theme", [{ category: ".*", type: ".*", color: "#f0f" }]);
         settings.should.have.a.property("projects");
         settings.projects.should.have.a.property("enabled", false);
+    });
+
+    it("test explicit userMenu set to true in theme setting", function () {
+      theme.init({
+          editorTheme: {
+              userMenu: true,
+          }
+      });
+
+      theme.app();
+
+      var settings = theme.settings();
+      settings.should.have.a.property("userMenu");
+      settings.userMenu.should.be.eql(true);
+
     });
 
 });

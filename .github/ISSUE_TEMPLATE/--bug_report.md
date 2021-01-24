@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Reproducable software issues in the core of Node-RED
+about: Reproducible software issues in the core of Node-RED
 title: ''
 labels: ''
 assignees: ''
@@ -33,7 +33,7 @@ To help us understand the issue, please fill-in as much of the following informa
 ### Please tell us about your environment:
 
 - [ ] Node-RED version:
-- [ ] node.js version:
+- [ ] Node.js version:
 - [ ] npm version:
 - [ ] Platform/OS:
 - [ ] Browser:
